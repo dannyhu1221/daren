@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>胡天任 · 品牌策略工作室</title>
+    <!-- PWA manifest & theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#cb6e42">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #faf6f0;
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif;
+            color: #2c2418;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e6ddd0;
+        }
+        .header h1 { font-size: 2rem; color: #cb6e42; letter-spacing: -0.5px; }
+        .header p { color: #8b765c; margin-top: 5px; font-size: 0.9rem; }
+        .current-project-bar {
+            background: #fff0e6;
+            border-radius: 40px;
+            padding: 6px 20px;
+            margin: 10px auto 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .current-project-label { font-weight: 500; color: #b85d34; }
+        .project-switch {
+            background: white;
+            border: 1px solid #e2d6ca;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0 25px;
+            border-bottom: 1px solid #e6ddd0;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: #f0e3d6;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #5e4b34;
+        }
+        .tab-btn.active { background: #cb6e42; color: white; }
+        .tab-btn.admin-btn { background: #2c2418; color: #e6ddd0; margin-left: auto; }
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #f0e8df;
+        }
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #4e3b28;
+            border-left: 5px solid #cb6e42;
+            padding-left: 15px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: 500; display: block; margin-bottom: 8px; color: #4e3b28; }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e2d6ca;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: #fefcf9;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #cb6e42;
+            box-shadow: 0 0 0 3px rgba(203,110,66,0.1);
+        }
+        button {
+            background: #cb6e42;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        button:hover { background: #b85d34; }
+        button.secondary { background: #9b8872; }
+        button.small { padding: 4px 12px; font-size: 0.75rem; }
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .canvas-cell {
+            background: #fef8f0;
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid #efe2d4;
+        }
+        .canvas-cell-title {
+            font-weight: 600;
+            color: #b77a55;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .canvas-cell textarea { background: white; font-size: 0.85rem; min-height: 80px; }
+        .report-content {
+            background: #fffaf3;
+            padding: 20px;
+            border-radius: 20px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #2c2418;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            display: none;
+        }
+        @media (max-width: 700px) {
+            .canvas-grid { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
+        }
+        .timeline-field {
+            margin-bottom: 25px;
+            border-bottom: 1px dashed #e6ddd0;
+            padding-bottom: 15px;
+        }
+        .timeline-field label { font-size: 1rem; color: #b77a55; }
+        .project-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .project-item {
+            background: #fef8f0;
+            border-radius: 16px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border: 1px solid #efe2d4;
+        }
+        .project-info { flex: 1; }
+        .project-name { font-weight: 600; color: #4e3b28; }
+        .project-meta { font-size: 0.7rem; color: #9b8872; }
+        .project-actions { display: flex; gap: 8px; }
+        hr { margin: 15px 0; border-color: #efe2d4; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>五问洞察 · 品牌策略工作室</h1>
+        <p>在混乱中看见秩序的人 — 胡天任</p>
+        <div id="currentProjectBar" class="current-project-bar">
+            <span class="current-project-label">当前项目：</span>
+            <span id="currentProjectNameDisplay">未选择</span>
+            <button id="showProjectListBtn" class="small secondary">📋 项目列表</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn" data-tab="project">📁 项目信息</button>
+        <button class="tab-btn" data-tab="selfcheck">📋 自检表</button>
+        <button class="tab-btn" data-tab="timeline">📅 品牌年谱</button>
+        <button class="tab-btn" data-tab="five">❓ 五问洞察</button>
+        <button class="tab-btn" data-tab="canvas">🎨 定位画布</button>
+        <button class="tab-btn" data-tab="report">📄 策略报告</button>
+        <button class="tab-btn admin-btn" data-tab="admin">⚙️ 后台管理</button>
+    </div>
+
+    <!-- 项目管理主界面（列表） -->
+    <div id="projectsTab" class="tab-content card" style="display: block;">
+        <div class="section-title">📂 所有项目 · 增删改查导</div>
+        <div class="action-bar" style="margin-bottom: 20px;">
+            <button id="newProjectBtn">➕ 新建项目</button>
+            <button id="importProjectBtn" class="secondary">📂 导入项目</button>
+            <input type="file" id="importFileInput" accept=".json" style="display:none;">
+        </div>
+        <div id="projectListContainer" class="project-list"></div>
+        <p style="margin-top: 15px; font-size: 0.75rem; color: #9b8872;">点击「编辑」加载并跳转至项目自检表；可导出备份或删除。</p>
+    </div>
+
+    <!-- 各模块容器 -->
+    <div id="projectTab" class="tab-content card" style="display:none;">
+        <div class="section-title">项目基本信息</div>
+        <div class="form-group"><label>项目名称 / 客户品牌</label><input type="text" id="projectName" placeholder="例：湘西小馆"></div>
+        <div class="form-group"><label>所属行业</label><select id="projectIndustry"><option value="">请选择</option><option>餐饮</option><option>零售/电商</option><option>文创/设计</option><option>服务业</option><option>科技/互联网</option><option>其他</option></select></div>
+        <div class="form-group"><label>品牌当前阶段</label><select id="projectStage"><option>0-1初创期</option><option>成长期</option><option>成熟期</option><option>转型期</option></select></div>
+        <div class="form-group"><label>本次咨询核心目标（一句话）</label><input type="text" id="projectGoal" placeholder="提升品牌辨识度、增加复购"></div>
+        <div class="action-bar"><button id="saveProjectInfo">保存并进入下一步 → 自检表</button></div>
+    </div>
+
+    <div id="selfcheckTab" class="tab-content card" style="display:none;">
+        <div class="section-title">品牌现状自检表（20项）</div>
+        <div id="selfcheckForm"></div>
+        <div class="action-bar"><button id="saveSelfCheck">保存并进入下一步 → 品牌年谱</button></div>
+    </div>
+
+    <div id="timelineTab" class="tab-content card" style="display:none;">
+        <div class="section-title">品牌年谱 · 发展路径梳理</div>
+        <div class="timeline-field"><label>📅 发展路径（关键事件、里程碑）</label><textarea id="timelinePath" rows="3"></textarea></div>
+        <div class="timeline-field"><label>✅ 做对了什么</label><textarea id="timelineRight" rows="2"></textarea></div>
+        <div class="timeline-field"><label>❌ 错过了什么</label><textarea id="timelineMissed" rows="2"></textarea></div>
+        <div class="timeline-field"><label>⚡ 当下的机遇与挑战</label><textarea id="timelineNow" rows="2"></textarea></div>
+        <div class="timeline-field"><label>🔭 对未来的思考</label><textarea id="timelineFuture" rows="2"></textarea></div>
+        <div class="action-bar"><button id="saveTimeline">保存并进入下一步 → 五问洞察</button></div>
+    </div>
+
+    <div id="fiveTab" class="tab-content card" style="display:none;">
+        <div class="section-title">五问洞察 · 直达本质</div>
+        <div id="fiveQuestionsForm"></div>
+        <div class="action-bar"><button id="saveFive">保存并进入下一步 → 定位画布</button></div>
+    </div>
+
+    <div id="canvasTab" class="tab-content card" style="display:none;">
+        <div class="section-title">品牌定位画布 · 九宫格共创</div>
+        <div id="canvasGrid" class="canvas-grid"></div>
+        <div class="action-bar"><button id="saveCanvas">保存并进入下一步 → 生成报告</button></div>
+    </div>
+
+    <div id="reportTab" class="tab-content card" style="display:none;">
+        <div class="section-title">品牌策略定位报告</div>
+        <div class="action-bar"><button id="generateReport">🚀 生成完整报告 (DeepSeek-V4-Pro)</button><button id="exportReport" class="secondary">📥 导出报告为文本</button></div>
+        <div id="reportDisplay" class="report-content" style="margin-top: 20px; min-height: 200px;">报告将显示在此处</div>
+    </div>
+
+    <div id="adminTab" class="tab-content card" style="display:none;">
+        <div class="section-title">后台管理 · 动态配置</div>
+        <div id="adminPanel"></div>
+        <div class="action-bar"><button id="saveAdminConfig">保存所有配置</button><button id="resetDefaultConfig" class="secondary">恢复默认配置</button></div>
+        <hr>
+        <div class="form-group"><label>DeepSeek API Key</label><input type="password" id="apiKeyInput" placeholder="sk-xxxxxxxx"></div>
+        <small><a href="https://platform.deepseek.com" target="_blank">获取API Key</a></small>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    // ---------- 完整配置 ----------
+    let config = {
+        selfCheck: [
+            { id: "sc1", text: "1. 你的品牌核心产品或服务是什么？", help: "用一句话说清楚你卖什么。" },
+            { id: "sc2", text: "2. 你的品牌成立多久了？目前处于哪个阶段？（初创/成长/成熟/转型）", help: "帮助你判断当前核心任务。" },
+            { id: "sc3", text: "3. 过去3个月，你的月均营业额是多少？相比半年前有何变化？", help: "数据是镜子。" },
+            { id: "sc4", text: "4. 你的主要客户群体是谁？（年龄、性别、职业、消费习惯）", help: "越具体越好。" },
+            { id: "sc5", text: "5. 客户通常通过什么渠道第一次知道你的品牌？", help: "例如：朋友介绍、小红书、抖音、美团、线下店。" },
+            { id: "sc6", text: "6. 你的复购率大概是多少？（老客户占比）主要因为什么复购？", help: "价格、口味、服务还是习惯？" },
+            { id: "sc7", text: "7. 你的客单价是多少？和同类型竞品相比属于偏高、中等还是偏低？", help: "价格带决定了你的竞争位置。" },
+            { id: "sc8", text: "8. 你目前最头疼的三个经营问题是什么？", help: "例如：客流少、留不住人、利润薄、招人难。" },
+            { id: "sc9", text: "9. 你的主要竞争对手是谁？他们比你强在哪里？", help: "客观分析，不要只说他们便宜。" },
+            { id: "sc10", text: "10. 你觉得自己和竞争对手最本质的差异是什么？", help: "如果答不上来，说明品牌差异化模糊。" },
+            { id: "sc11", text: "11. 你目前拥有哪些品牌物料？（Logo、包装、菜单、名片、公众号、小红书账号等）", help: "列举已有的。" },
+            { id: "sc12", text: "12. 你的品牌视觉风格一致吗？是否有统一的色彩、字体、调性？", help: "不一致会让顾客记不住。" },
+            { id: "sc13", text: "13. 你是否有明确的品牌 slogan 或一句话介绍？如果有，请写下。", help: "没有的话，空着。" },
+            { id: "sc14", text: "14. 你过去一年在品牌推广上花了多少钱？主要投在哪里？", help: "包括设计费、广告费、活动费等。" },
+            { id: "sc15", text: "15. 你的核心团队有多少人？分工明确吗？", help: "团队能力影响品牌落地。" },
+            { id: "sc16", text: "16. 你是否有标准化的服务流程或产品制作流程？", help: "标准化决定可复制性。" },
+            { id: "sc17", text: "17. 顾客通常会如何评价你的品牌？（三个正面词，三个负面词）", help: "可以从线上评价或口头反馈中提炼。" },
+            { id: "sc18", text: "18. 你的品牌故事或创始初心是什么？顾客能感受到吗？", help: "故事是情感的载体。" },
+            { id: "sc19", text: "19. 如果现在有一笔预算，你最想优先投资在哪个方面？（产品/设计/推广/团队）", help: "反映你的战略直觉。" },
+            { id: "sc20", text: "20. 你希望通过品牌策略达到的最核心目标是什么？", help: "例如：月营收翻倍、开出第二家店、成为品类第一。" }
+        ],
+        fiveQuestions: [
+            { id: "fq1", text: "你现在最头疼、最睡不着觉的问题是什么？", placeholder: "生意一直没有起色，顾客留不住..." },
+            { id: "fq2", text: "如果问题完美解决，你的品牌会变成什么样子？", placeholder: "每天排队，客单价提升30%..." },
+            { id: "fq3", text: "你和同行最不一样的地方是什么？（哪怕很小）", placeholder: "祖传秘方，独家服务细节..." },
+            { id: "fq4", text: "你的核心顾客是谁？他们为什么会反复回来？", placeholder: "附近白领，因为出餐快且干净..." },
+            { id: "fq5", text: "现在你最想先搞定的两件事是什么？", placeholder: "提炼一句slogan + 重新设计菜单" }
+        ],
+        canvasCells: [
+            { title: "目标客群", placeholder: "谁最需要你？" },
+            { title: "购买任务", placeholder: "顾客在什么场景下购买？" },
+            { title: "核心痛点", placeholder: "顾客不满意现有选择什么？" },
+            { title: "产品/服务", placeholder: "你具体卖什么？" },
+            { title: "核心差异", placeholder: "你和别人哪里不同？" },
+            { title: "可感知价值", placeholder: "差异给客户带来什么好处？" },
+            { title: "品牌性格", placeholder: "像一个人，是什么性格？" },
+            { title: "信任证据", placeholder: "凭什么相信你？" },
+            { title: "核心口号", placeholder: "一句能记住的话" }
+        ],
+        aiPrompt: {
+            system: "你是品牌策略顾问胡天任，拥有12年实战经验。请根据用户填写的【项目信息】、【品牌自检表】、【品牌年谱】、【五问洞察】、【定位画布】内容，生成一份专业的《品牌策略定位报告》。报告需包含以下结构：\n1. 项目概况（客户名称、行业、阶段、目标）\n2. 品牌年谱提炼（成败关键节点）\n3. 核心痛点分析\n4. 差异化机会\n5. 客群与场景建议\n6. 品牌沟通调性\n7. 初期落地3件事\n\n语言风格：温暖、直击本质、避免空话。",
+            userTemplate: "项目信息：名称={{projectName}}，行业={{industry}}，阶段={{stage}}，核心目标={{goal}}\n\n品牌自检表：\n{{selfCheck}}\n\n品牌年谱：\n发展路径：{{timelinePath}}\n做对了什么：{{timelineRight}}\n错过了什么：{{timelineMissed}}\n当下机遇与挑战：{{timelineNow}}\n未来思考：{{timelineFuture}}\n\n五问洞察：\n{{five}}\n\n定位画布：\n{{canvas}}"
+        }
+    };
+
+    // ---------- 全局项目数据 ----------
+    let allProjects = [];           
+    let currentProjectId = null;   
+    let currentProjectData = null;  
+
+    const moduleOrder = ['project', 'selfcheck', 'timeline', 'five', 'canvas', 'report'];
+
+    function showToast(msg, isErr = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        toast.style.background = isErr ? '#c23d2b' : '#2c2418';
+        setTimeout(() => toast.style.display = 'none', 2500);
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+    function persistProjects() { localStorage.setItem('brand_projects', JSON.stringify(allProjects)); }
+
+    function loadProjectsFromStorage() {
+        const saved = localStorage.getItem('brand_projects');
+        if(saved) {
+            allProjects = JSON.parse(saved);
+        } else {
+            const exampleId = "proj_" + Date.now();
+            allProjects = [{
+                id: exampleId,
+                projectInfo: { name: "示例餐厅", industry: "餐饮", stage: "成长期", goal: "提升品牌辨识度" },
+                selfCheckAnswers: {},
+                timeline: { path: "", right: "", missed: "", now: "", future: "" },
+                fiveAnswers: {},
+                canvasAnswers: {},
+                report: "",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }];
+            persistProjects();
+        }
+        if(allProjects.length && !currentProjectId) currentProjectId = allProjects[0].id;
+        if(currentProjectId) loadCurrentProjectData();
+    }
+
+    function loadCurrentProjectData() {
+        const found = allProjects.find(p => p.id === currentProjectId);
+        if(found) {
+            currentProjectData = found;
+            updateCurrentProjectNameDisplay();
+            renderAllForms();      
+        } else if(allProjects.length) {
+            currentProjectId = allProjects[0].id;
+            loadCurrentProjectData();
+        } else {
+            currentProjectData = null;
+        }
+    }
+
+    function updateCurrentProjectNameDisplay() {
+        const nameSpan = document.getElementById('currentProjectNameDisplay');
+        if(currentProjectData) nameSpan.innerText = currentProjectData.projectInfo.name || "未命名项目";
+        else nameSpan.innerText = "无项目";
+    }
+
+    function syncCurrentProjectFromForms() {
+        if(!currentProjectData) return;
+        currentProjectData.projectInfo = {
+            name: document.getElementById('projectName').value,
+            industry: document.getElementById('projectIndustry').value,
+            stage: document.getElementById('projectStage').value,
+            goal: document.getElementById('projectGoal').value
+        };
+        config.selfCheck.forEach(q => {
+            const el = document.querySelector(`.selfcheck-input[data-id="${q.id}"]`);
+            if(el) currentProjectData.selfCheckAnswers[q.id] = el.value;
+        });
+        currentProjectData.timeline = {
+            path: document.getElementById('timelinePath').value,
+            right: document.getElementById('timelineRight').value,
+            missed: document.getElementById('timelineMissed').value,
+            now: document.getElementById('timelineNow').value,
+            future: document.getElementById('timelineFuture').value
+        };
+        config.fiveQuestions.forEach(q => {
+            const el = document.querySelector(`.five-input[data-id="${q.id}"]`);
+            if(el) currentProjectData.fiveAnswers[q.id] = el.value;
+        });
+        config.canvasCells.forEach((_, idx) => {
+            const el = document.querySelector(`.canvas-input[data-key="cell_${idx}"]`);
+            if(el) currentProjectData.canvasAnswers[`cell_${idx}`] = el.value;
+        });
+        currentProjectData.updatedAt = new Date().toISOString();
+        const idx = allProjects.findIndex(p => p.id === currentProjectId);
+        if(idx !== -1) allProjects[idx] = currentProjectData;
+        persistProjects();
+        renderProjectList();
+        updateCurrentProjectNameDisplay();
+    }
+
+    function renderAllForms() {
+        if(!currentProjectData) return;
+        document.getElementById('projectName').value = currentProjectData.projectInfo.name || "";
+        document.getElementById('projectIndustry').value = currentProjectData.projectInfo.industry || "";
+        document.getElementById('projectStage').value = currentProjectData.projectInfo.stage || "";
+        document.getElementById('projectGoal').value = currentProjectData.projectInfo.goal || "";
+        const scContainer = document.getElementById('selfcheckForm');
+        scContainer.innerHTML = config.selfCheck.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="selfcheck-input">${escapeHtml(currentProjectData.selfCheckAnswers[q.id] || '')}</textarea><div class="helper" style="font-size:0.7rem; color:#9b8872;">${escapeHtml(q.help)}</div></div>`).join('');
+        document.querySelectorAll('.selfcheck-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        document.getElementById('timelinePath').value = currentProjectData.timeline.path || "";
+        document.getElementById('timelineRight').value = currentProjectData.timeline.right || "";
+        document.getElementById('timelineMissed').value = currentProjectData.timeline.missed || "";
+        document.getElementById('timelineNow').value = currentProjectData.timeline.now || "";
+        document.getElementById('timelineFuture').value = currentProjectData.timeline.future || "";
+        const fiveContainer = document.getElementById('fiveQuestionsForm');
+        fiveContainer.innerHTML = config.fiveQuestions.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="five-input" placeholder="${escapeHtml(q.placeholder)}">${escapeHtml(currentProjectData.fiveAnswers[q.id] || '')}</textarea></div>`).join('');
+        document.querySelectorAll('.five-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        const canvasContainer = document.getElementById('canvasGrid');
+        canvasContainer.innerHTML = config.canvasCells.map((cell, idx) => `<div class="canvas-cell"><div class="canvas-cell-title">${escapeHtml(cell.title)}</div><textarea rows="3" data-key="cell_${idx}" class="canvas-input" placeholder="${escapeHtml(cell.placeholder)}">${escapeHtml(currentProjectData.canvasAnswers[`cell_${idx}`] || '')}</textarea></div>`).join('');
+        document.querySelectorAll('.canvas-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        const reportDiv = document.getElementById('reportDisplay');
+        if(currentProjectData.report) {
+            if(typeof marked !== 'undefined') reportDiv.innerHTML = marked.parse(currentProjectData.report);
+            else reportDiv.innerHTML = `<pre>${escapeHtml(currentProjectData.report)}</pre>`;
+        } else { reportDiv.innerHTML = "尚未生成报告，点击上方按钮生成。"; }
+    }
+
+    function switchTab(tabId) {
+        const tabs = ['projectsTab','projectTab','selfcheckTab','timelineTab','fiveTab','canvasTab','reportTab','adminTab'];
+        tabs.forEach(id => document.getElementById(id).style.display = 'none');
+        if(tabId === 'projects') document.getElementById('projectsTab').style.display = 'block';
+        else if(tabId === 'project') document.getElementById('projectTab').style.display = 'block';
+        else if(tabId === 'selfcheck') document.getElementById('selfcheckTab').style.display = 'block';
+        else if(tabId === 'timeline') document.getElementById('timelineTab').style.display = 'block';
+        else if(tabId === 'five') document.getElementById('fiveTab').style.display = 'block';
+        else if(tabId === 'canvas') document.getElementById('canvasTab').style.display = 'block';
+        else if(tabId === 'report') document.getElementById('reportTab').style.display = 'block';
+        else if(tabId === 'admin') { document.getElementById('adminTab').style.display = 'block'; renderAdminPanel(); }
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+    }
+
+    function saveAndNext(currentModule) {
+        syncCurrentProjectFromForms();
+        const curIndex = moduleOrder.indexOf(currentModule);
+        if(curIndex !== -1 && curIndex < moduleOrder.length - 1) {
+            const nextModule = moduleOrder[curIndex+1];
+            switchTab(nextModule);
+            showToast(`已保存，进入下一步：${nextModule}`);
+        } else { showToast("已保存"); }
+    }
+
+    function createNewProject() {
+        const newId = "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+        const newProject = {
+            id: newId,
+            projectInfo: { name: "新项目", industry: "", stage: "", goal: "" },
+            selfCheckAnswers: {},
+            timeline: { path: "", right: "", missed: "", now: "", future: "" },
+            fiveAnswers: {},
+            canvasAnswers: {},
+            report: "",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        allProjects.push(newProject);
+        persistProjects();
+        currentProjectId = newId;
+        loadCurrentProjectData();
+        renderProjectList();
+        showToast("新项目已创建，请填写项目信息");
+        switchTab('project');
+    }
+
+    function deleteProject(pid) {
+        if(allProjects.length <= 1) { showToast("至少保留一个项目", true); return; }
+        if(confirm("删除项目后数据不可恢复，确定吗？")) {
+            allProjects = allProjects.filter(p => p.id !== pid);
+            if(currentProjectId === pid) currentProjectId = allProjects[0].id;
+            persistProjects();
+            loadCurrentProjectData();
+            renderProjectList();
+            showToast("项目已删除");
+        }
+    }
+
+    function exportProject(pid) {
+        const proj = allProjects.find(p => p.id === pid);
+        if(!proj) return;
+        const dataStr = JSON.stringify(proj, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `project_${proj.projectInfo.name || proj.id}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("导出成功");
+    }
+
+    function importProjectFromFile(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if(!imported.id) imported.id = "import_" + Date.now();
+                if(!imported.createdAt) imported.createdAt = new Date().toISOString();
+                imported.updatedAt = new Date().toISOString();
+                if(!imported.projectInfo) imported.projectInfo = { name: "导入项目", industry: "", stage: "", goal: "" };
+                if(!imported.selfCheckAnswers) imported.selfCheckAnswers = {};
+                if(!imported.timeline) imported.timeline = { path: "", right: "", missed: "", now: "", future: "" };
+                if(!imported.fiveAnswers) imported.fiveAnswers = {};
+                if(!imported.canvasAnswers) imported.canvasAnswers = {};
+                if(!imported.report) imported.report = "";
+                allProjects.push(imported);
+                persistProjects();
+                renderProjectList();
+                showToast("导入成功");
+            } catch(err) { showToast("文件解析失败", true); }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderProjectList() {
+        const container = document.getElementById('projectListContainer');
+        if(!container) return;
+        if(allProjects.length === 0) { container.innerHTML = "<p>暂无项目，请新建</p>"; return; }
+        let html = '';
+        allProjects.forEach(proj => {
+            const isCur = (proj.id === currentProjectId);
+            html += `<div class="project-item" style="${isCur ? 'border-left: 4px solid #cb6e42;' : ''}">
+                <div class="project-info">
+                    <div class="project-name">${escapeHtml(proj.projectInfo.name)}</div>
+                    <div class="project-meta">更新: ${new Date(proj.updatedAt).toLocaleString()}</div>
+                </div>
+                <div class="project-actions">
+                    <button class="small" onclick="editProject('${proj.id}')">编辑</button>
+                    <button class="small secondary" onclick="exportProject('${proj.id}')">导出</button>
+                    <button class="small" style="background:#c23d2b;" onclick="deleteProject('${proj.id}')">删除</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    window.editProject = function(pid) {
+        if(currentProjectId === pid) { switchTab('selfcheck'); return; }
+        if(currentProjectData) syncCurrentProjectFromForms();
+        currentProjectId = pid;
+        loadCurrentProjectData();
+        renderProjectList();
+        showToast(`已加载项目：${currentProjectData.projectInfo.name}`);
+        switchTab('selfcheck');
+    };
+
+    function renderAdminPanel() {
+        const container = document.getElementById('adminPanel');
+        let html = `<div class="config-group"><h3>自检表问题配置</h3>`;
+        config.selfCheck.forEach((q, i) => {
+            html += `<div class="form-group"><label>问题${i+1}</label><input type="text" id="admin_sc_text_${i}" value="${escapeHtml(q.text)}"><input type="text" id="admin_sc_help_${i}" placeholder="帮助文本" value="${escapeHtml(q.help)}"></div>`;
+        });
+        html += `<button id="addScBtn">+ 新增自检问题</button></div>`;
+        html += `<div class="config-group"><h3>五问配置</h3>`;
+        config.fiveQuestions.forEach((q, i) => {
+            html += `<div class="form-group"><label>五问${i+1}</label><input type="text" id="admin_fq_text_${i}" value="${escapeHtml(q.text)}"><input type="text" id="admin_fq_placeholder_${i}" placeholder="placeholder" value="${escapeHtml(q.placeholder)}"></div>`;
+        });
+        html += `<button id="addFqBtn">+ 新增五问</button></div>`;
+        html += `<div class="config-group"><h3>画布配置</h3>`;
+        config.canvasCells.forEach((cell, i) => {
+            html += `<div class="form-group"><label>格子${i+1}</label><input type="text" id="admin_cell_title_${i}" value="${escapeHtml(cell.title)}"><input type="text" id="admin_cell_placeholder_${i}" placeholder="占位符" value="${escapeHtml(cell.placeholder)}"></div>`;
+        });
+        html += `<button id="addCellBtn">+ 新增画布格子</button></div>`;
+        html += `<div class="config-group"><h3>AI提示词</h3><textarea id="admin_system_prompt" rows="5">${escapeHtml(config.aiPrompt.system)}</textarea><textarea id="admin_user_template" rows="4">${escapeHtml(config.aiPrompt.userTemplate)}</textarea></div>`;
+        container.innerHTML = html;
+        const saveBtn = document.getElementById('saveAdminConfig');
+        if(saveBtn) saveBtn.onclick = () => {
+            const newSc = [];
+            for(let i=0; i<document.querySelectorAll('[id^="admin_sc_text_"]').length; i++) {
+                const textEl = document.getElementById(`admin_sc_text_${i}`);
+                if(!textEl) continue;
+                newSc.push({ id: `sc${Date.now()}_${i}`, text: textEl.value, help: document.getElementById(`admin_sc_help_${i}`)?.value || "" });
+            }
+            if(newSc.length) config.selfCheck = newSc;
+            const newFq = [];
+            for(let i=0; i<document.querySelectorAll('[id^="admin_fq_text_"]').length; i++) {
+                const textEl = document.getElementById(`admin_fq_text_${i}`);
+                if(!textEl) break;
+                newFq.push({ id: `fq${Date.now()}_${i}`, text: textEl.value, placeholder: document.getElementById(`admin_fq_placeholder_${i}`)?.value || "" });
+            }
+            if(newFq.length) config.fiveQuestions = newFq;
+            const newCells = [];
+            for(let i=0; i<document.querySelectorAll('[id^="admin_cell_title_"]').length; i++) {
+                const titleEl = document.getElementById(`admin_cell_title_${i}`);
+                if(!titleEl) break;
+                newCells.push({ title: titleEl.value, placeholder: document.getElementById(`admin_cell_placeholder_${i}`)?.value || "" });
+            }
+            if(newCells.length) config.canvasCells = newCells;
+            config.aiPrompt.system = document.getElementById('admin_system_prompt').value;
+            config.aiPrompt.userTemplate = document.getElementById('admin_user_template').value;
+            localStorage.setItem('brand_config', JSON.stringify(config));
+            showToast("配置已保存，刷新表单生效");
+            if(currentProjectData) renderAllForms();
+        };
+        document.getElementById('addScBtn')?.addEventListener('click', () => renderAdminPanel());
+        document.getElementById('addFqBtn')?.addEventListener('click', () => renderAdminPanel());
+        document.getElementById('addCellBtn')?.addEventListener('click', () => renderAdminPanel());
+    }
+
+    async function generateReport() {
+        const apiKey = document.getElementById('apiKeyInput').value.trim();
+        if(!apiKey) { showToast("请在后台管理填写DeepSeek API Key", true); switchTab('admin'); return; }
+        localStorage.setItem('deepseek_key', apiKey);
+        if(!currentProjectData) return;
+        syncCurrentProjectFromForms();
+        const proj = currentProjectData;
+        const selfText = config.selfCheck.map(q => `${q.text}：${proj.selfCheckAnswers[q.id] || "未填写"}`).join("\n");
+        const fiveText = config.fiveQuestions.map(q => `${q.text}：${proj.fiveAnswers[q.id] || "未填写"}`).join("\n");
+        const canvasText = config.canvasCells.map((cell, idx) => `${cell.title}：${proj.canvasAnswers[`cell_${idx}`] || "未填写"}`).join("\n");
+        let userPrompt = config.aiPrompt.userTemplate
+            .replace('{{projectName}}', proj.projectInfo.name)
+            .replace('{{industry}}', proj.projectInfo.industry)
+            .replace('{{stage}}', proj.projectInfo.stage)
+            .replace('{{goal}}', proj.projectInfo.goal)
+            .replace('{{selfCheck}}', selfText)
+            .replace('{{five}}', fiveText)
+            .replace('{{canvas}}', canvasText)
+            .replace('{{timelinePath}}', proj.timeline.path)
+            .replace('{{timelineRight}}', proj.timeline.right)
+            .replace('{{timelineMissed}}', proj.timeline.missed)
+            .replace('{{timelineNow}}', proj.timeline.now)
+            .replace('{{timelineFuture}}', proj.timeline.future);
+        showToast("AI思考中... (DeepSeek-V4-Pro)");
+        const reportDiv = document.getElementById('reportDisplay');
+        reportDiv.innerHTML = "⏳ 生成中，请稍候...";
+        try {
+            const resp = await fetch("https://api.deepseek.com/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: JSON.stringify({
+                    model: "deepseek-v4-pro",
+                    messages: [
+                        { role: "system", content: config.aiPrompt.system },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 3000
+                })
+            });
+            if(!resp.ok) throw new Error(`API错误 ${resp.status}`);
+            const data = await resp.json();
+            const content = data.choices[0].message.content;
+            if(typeof marked !== 'undefined') reportDiv.innerHTML = marked.parse(content);
+            else reportDiv.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
+            currentProjectData.report = content;
+            syncCurrentProjectFromForms();
+            showToast("报告生成完成 (DeepSeek-V4-Pro)");
+        } catch(e) {
+            reportDiv.innerHTML = `<div style="color:#c23d2b;">生成失败：${e.message}</div>`;
+            showToast("失败", true);
+        }
+    }
+
+    function exportReportText() {
+        const reportDiv = document.getElementById('reportDisplay');
+        const text = reportDiv.innerText;
+        if(!text || text.includes("生成中")) { showToast("请先生成报告", true); return; }
+        const blob = new Blob([text], {type:"text/plain"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `报告_${currentProjectData?.projectInfo.name || "项目"}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function init() {
+        const savedConfig = localStorage.getItem('brand_config');
+        if(savedConfig) try { config = JSON.parse(savedConfig); } catch(e) {}
+        const savedKey = localStorage.getItem('deepseek_key');
+        if(savedKey) document.getElementById('apiKeyInput').value = savedKey;
+        loadProjectsFromStorage();
+        renderProjectList();
+        document.getElementById('newProjectBtn').onclick = createNewProject;
+        document.getElementById('importProjectBtn').onclick = () => document.getElementById('importFileInput').click();
+        document.getElementById('importFileInput').onchange = e => { if(e.target.files[0]) importProjectFromFile(e.target.files[0]); e.target.value=''; };
+        document.getElementById('showProjectListBtn').onclick = () => switchTab('projects');
+        document.getElementById('saveProjectInfo').onclick = () => saveAndNext('project');
+        document.getElementById('saveSelfCheck').onclick = () => saveAndNext('selfcheck');
+        document.getElementById('saveTimeline').onclick = () => saveAndNext('timeline');
+        document.getElementById('saveFive').onclick = () => saveAndNext('five');
+        document.getElementById('saveCanvas').onclick = () => saveAndNext('canvas');
+        document.getElementById('generateReport').onclick = generateReport;
+        document.getElementById('exportReport').onclick = exportReportText;
+        document.getElementById('resetDefaultConfig').onclick = () => { if(confirm("恢复默认配置会覆盖当前后台设置")) { localStorage.removeItem('brand_config'); location.reload(); } };
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+        if(typeof marked === 'undefined') {
+            const script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+            document.head.appendChild(script);
+        }
+    }
+    init();
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            console.log('Service Worker registered', reg);
+        }).catch(err => {
+            console.log('SW registration failed', err);
+        });
+    }
+</script>
+</body>
+</html>
