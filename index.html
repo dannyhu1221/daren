@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>胡天任 · 品牌策略工作室</title>
-    <!-- PWA manifest & theme -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#cb6e42">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,14 +38,6 @@
             justify-content: center;
         }
         .current-project-label { font-weight: 500; color: #b85d34; }
-        .project-switch {
-            background: white;
-            border: 1px solid #e2d6ca;
-            border-radius: 30px;
-            padding: 4px 12px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
         .tabs {
             display: flex;
             flex-wrap: wrap;
@@ -186,6 +177,13 @@
         .project-meta { font-size: 0.7rem; color: #9b8872; }
         .project-actions { display: flex; gap: 8px; }
         hr { margin: 15px 0; border-color: #efe2d4; }
+        .config-field-item {
+            background: #fef8f0;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #efe2d4;
+        }
     </style>
 </head>
 <body>
@@ -210,7 +208,7 @@
         <button class="tab-btn admin-btn" data-tab="admin">⚙️ 后台管理</button>
     </div>
 
-    <!-- 项目管理主界面（列表） -->
+    <!-- 项目管理主界面 -->
     <div id="projectsTab" class="tab-content card" style="display: block;">
         <div class="section-title">📂 所有项目 · 增删改查导</div>
         <div class="action-bar" style="margin-bottom: 20px;">
@@ -222,13 +220,10 @@
         <p style="margin-top: 15px; font-size: 0.75rem; color: #9b8872;">点击「编辑」加载并跳转至项目自检表；可导出备份或删除。</p>
     </div>
 
-    <!-- 各模块容器 -->
+    <!-- 项目信息模块（动态渲染） -->
     <div id="projectTab" class="tab-content card" style="display:none;">
         <div class="section-title">项目基本信息</div>
-        <div class="form-group"><label>项目名称 / 客户品牌</label><input type="text" id="projectName" placeholder="例：湘西小馆"></div>
-        <div class="form-group"><label>所属行业</label><select id="projectIndustry"><option value="">请选择</option><option>餐饮</option><option>零售/电商</option><option>文创/设计</option><option>服务业</option><option>科技/互联网</option><option>其他</option></select></div>
-        <div class="form-group"><label>品牌当前阶段</label><select id="projectStage"><option>0-1初创期</option><option>成长期</option><option>成熟期</option><option>转型期</option></select></div>
-        <div class="form-group"><label>本次咨询核心目标（一句话）</label><input type="text" id="projectGoal" placeholder="提升品牌辨识度、增加复购"></div>
+        <div id="projectInfoForm"></div>
         <div class="action-bar"><button id="saveProjectInfo">保存并进入下一步 → 自检表</button></div>
     </div>
 
@@ -278,8 +273,16 @@
 <div id="toast" class="toast"></div>
 
 <script>
-    // ---------- 完整配置 ----------
+    // ---------- 配置：包含动态项目信息字段定义 ----------
     let config = {
+        // 项目基本信息字段定义（支持增删改）
+        projectInfoFields: [
+            { key: "name", label: "项目名称 / 客户品牌", type: "text", placeholder: "例：湘西小馆", default: "" },
+            { key: "industry", label: "所属行业", type: "select", options: ["餐饮","零售/电商","文创/设计","服务业","科技/互联网","其他"], default: "" },
+            { key: "stage", label: "品牌当前阶段", type: "select", options: ["0-1初创期","成长期","成熟期","转型期"], default: "" },
+            { key: "goal", label: "本次咨询核心目标（一句话）", type: "text", placeholder: "提升品牌辨识度、增加复购", default: "" },
+            { key: "background", label: "项目背景信息", type: "textarea", placeholder: "请描述品牌发展历程、当前困境、市场环境等...", default: "" }
+        ],
         selfCheck: [
             { id: "sc1", text: "1. 你的品牌核心产品或服务是什么？", help: "用一句话说清楚你卖什么。" },
             { id: "sc2", text: "2. 你的品牌成立多久了？目前处于哪个阶段？（初创/成长/成熟/转型）", help: "帮助你判断当前核心任务。" },
@@ -321,8 +324,8 @@
             { title: "核心口号", placeholder: "一句能记住的话" }
         ],
         aiPrompt: {
-            system: "你是品牌策略顾问胡天任，拥有12年实战经验。请根据用户填写的【项目信息】、【品牌自检表】、【品牌年谱】、【五问洞察】、【定位画布】内容，生成一份专业的《品牌策略定位报告》。报告需包含以下结构：\n1. 项目概况（客户名称、行业、阶段、目标）\n2. 品牌年谱提炼（成败关键节点）\n3. 核心痛点分析\n4. 差异化机会\n5. 客群与场景建议\n6. 品牌沟通调性\n7. 初期落地3件事\n\n语言风格：温暖、直击本质、避免空话。",
-            userTemplate: "项目信息：名称={{projectName}}，行业={{industry}}，阶段={{stage}}，核心目标={{goal}}\n\n品牌自检表：\n{{selfCheck}}\n\n品牌年谱：\n发展路径：{{timelinePath}}\n做对了什么：{{timelineRight}}\n错过了什么：{{timelineMissed}}\n当下机遇与挑战：{{timelineNow}}\n未来思考：{{timelineFuture}}\n\n五问洞察：\n{{five}}\n\n定位画布：\n{{canvas}}"
+            system: "你是品牌策略顾问胡天任，拥有12年实战经验。请根据用户填写的【项目信息】、【品牌自检表】、【品牌年谱】、【五问洞察】、【定位画布】内容，生成一份专业的《品牌策略定位报告》。报告需包含以下结构：\n1. 项目概况（客户名称、行业、阶段、目标、背景）\n2. 品牌年谱提炼（成败关键节点）\n3. 核心痛点分析\n4. 差异化机会\n5. 客群与场景建议\n6. 品牌沟通调性\n7. 初期落地3件事\n\n语言风格：温暖、直击本质、避免空话。",
+            userTemplate: "项目信息：\n{{projectInfo}}\n\n品牌自检表：\n{{selfCheck}}\n\n品牌年谱：\n发展路径：{{timelinePath}}\n做对了什么：{{timelineRight}}\n错过了什么：{{timelineMissed}}\n当下机遇与挑战：{{timelineNow}}\n未来思考：{{timelineFuture}}\n\n五问洞察：\n{{five}}\n\n定位画布：\n{{canvas}}"
         }
     };
 
@@ -353,7 +356,7 @@
             const exampleId = "proj_" + Date.now();
             allProjects = [{
                 id: exampleId,
-                projectInfo: { name: "示例餐厅", industry: "餐饮", stage: "成长期", goal: "提升品牌辨识度" },
+                projectInfo: { name: "示例餐厅", industry: "餐饮", stage: "成长期", goal: "提升品牌辨识度", background: "一家主打湘菜的社区店，开业两年，面临周边新店竞争" },
                 selfCheckAnswers: {},
                 timeline: { path: "", right: "", missed: "", now: "", future: "" },
                 fiveAnswers: {},
@@ -368,9 +371,21 @@
         if(currentProjectId) loadCurrentProjectData();
     }
 
+    // 迁移旧项目数据结构（确保 projectInfo 包含所有定义字段）
+    function migrateProjectInfo(proj) {
+        if (!proj.projectInfo) proj.projectInfo = {};
+        config.projectInfoFields.forEach(field => {
+            if (proj.projectInfo[field.key] === undefined) {
+                proj.projectInfo[field.key] = field.default || "";
+            }
+        });
+        return proj;
+    }
+
     function loadCurrentProjectData() {
-        const found = allProjects.find(p => p.id === currentProjectId);
+        let found = allProjects.find(p => p.id === currentProjectId);
         if(found) {
+            found = migrateProjectInfo(found);
             currentProjectData = found;
             updateCurrentProjectNameDisplay();
             renderAllForms();      
@@ -388,18 +403,35 @@
         else nameSpan.innerText = "无项目";
     }
 
+    // 从动态表单收集项目信息数据
+    function collectProjectInfoFromForm() {
+        const info = {};
+        config.projectInfoFields.forEach(field => {
+            const el = document.getElementById(`project_field_${field.key}`);
+            if (el) info[field.key] = el.value;
+            else info[field.key] = currentProjectData?.projectInfo[field.key] || "";
+        });
+        return info;
+    }
+
+    // 将项目信息数据填充到动态表单
+    function populateProjectInfoForm(info) {
+        config.projectInfoFields.forEach(field => {
+            const el = document.getElementById(`project_field_${field.key}`);
+            if (el) el.value = info[field.key] || "";
+        });
+    }
+
     function syncCurrentProjectFromForms() {
         if(!currentProjectData) return;
-        currentProjectData.projectInfo = {
-            name: document.getElementById('projectName').value,
-            industry: document.getElementById('projectIndustry').value,
-            stage: document.getElementById('projectStage').value,
-            goal: document.getElementById('projectGoal').value
-        };
+        // 项目信息（动态）
+        currentProjectData.projectInfo = collectProjectInfoFromForm();
+        // 自检表
         config.selfCheck.forEach(q => {
             const el = document.querySelector(`.selfcheck-input[data-id="${q.id}"]`);
             if(el) currentProjectData.selfCheckAnswers[q.id] = el.value;
         });
+        // 年谱
         currentProjectData.timeline = {
             path: document.getElementById('timelinePath').value,
             right: document.getElementById('timelineRight').value,
@@ -407,10 +439,12 @@
             now: document.getElementById('timelineNow').value,
             future: document.getElementById('timelineFuture').value
         };
+        // 五问
         config.fiveQuestions.forEach(q => {
             const el = document.querySelector(`.five-input[data-id="${q.id}"]`);
             if(el) currentProjectData.fiveAnswers[q.id] = el.value;
         });
+        // 画布
         config.canvasCells.forEach((_, idx) => {
             const el = document.querySelector(`.canvas-input[data-key="cell_${idx}"]`);
             if(el) currentProjectData.canvasAnswers[`cell_${idx}`] = el.value;
@@ -423,26 +457,63 @@
         updateCurrentProjectNameDisplay();
     }
 
+    // 渲染项目信息模块（动态）
+    function renderProjectInfoForm() {
+        const container = document.getElementById('projectInfoForm');
+        let html = '';
+        config.projectInfoFields.forEach(field => {
+            const val = currentProjectData?.projectInfo[field.key] || "";
+            if (field.type === 'select') {
+                let options = '';
+                (field.options || []).forEach(opt => {
+                    options += `<option value="${escapeHtml(opt)}" ${val === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`;
+                });
+                html += `<div class="form-group"><label>${escapeHtml(field.label)}</label><select id="project_field_${field.key}">${options}</select></div>`;
+            } else if (field.type === 'textarea') {
+                html += `<div class="form-group"><label>${escapeHtml(field.label)}</label><textarea id="project_field_${field.key}" rows="3" placeholder="${escapeHtml(field.placeholder || '')}">${escapeHtml(val)}</textarea></div>`;
+            } else {
+                html += `<div class="form-group"><label>${escapeHtml(field.label)}</label><input type="text" id="project_field_${field.key}" placeholder="${escapeHtml(field.placeholder || '')}" value="${escapeHtml(val)}"></div>`;
+            }
+        });
+        container.innerHTML = html;
+        // 绑定输入事件实时保存
+        config.projectInfoFields.forEach(field => {
+            const el = document.getElementById(`project_field_${field.key}`);
+            if (el) el.addEventListener('input', () => syncCurrentProjectFromForms());
+        });
+    }
+
     function renderAllForms() {
         if(!currentProjectData) return;
-        document.getElementById('projectName').value = currentProjectData.projectInfo.name || "";
-        document.getElementById('projectIndustry').value = currentProjectData.projectInfo.industry || "";
-        document.getElementById('projectStage').value = currentProjectData.projectInfo.stage || "";
-        document.getElementById('projectGoal').value = currentProjectData.projectInfo.goal || "";
+        renderProjectInfoForm();
+        // 自检表
         const scContainer = document.getElementById('selfcheckForm');
         scContainer.innerHTML = config.selfCheck.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="selfcheck-input">${escapeHtml(currentProjectData.selfCheckAnswers[q.id] || '')}</textarea><div class="helper" style="font-size:0.7rem; color:#9b8872;">${escapeHtml(q.help)}</div></div>`).join('');
-        document.querySelectorAll('.selfcheck-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        document.querySelectorAll('.selfcheck-input').forEach(el => {
+            el.addEventListener('input', () => syncCurrentProjectFromForms());
+        });
+        // 年谱
         document.getElementById('timelinePath').value = currentProjectData.timeline.path || "";
         document.getElementById('timelineRight').value = currentProjectData.timeline.right || "";
         document.getElementById('timelineMissed').value = currentProjectData.timeline.missed || "";
         document.getElementById('timelineNow').value = currentProjectData.timeline.now || "";
         document.getElementById('timelineFuture').value = currentProjectData.timeline.future || "";
+        ['timelinePath','timelineRight','timelineMissed','timelineNow','timelineFuture'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => syncCurrentProjectFromForms());
+        });
+        // 五问
         const fiveContainer = document.getElementById('fiveQuestionsForm');
         fiveContainer.innerHTML = config.fiveQuestions.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="five-input" placeholder="${escapeHtml(q.placeholder)}">${escapeHtml(currentProjectData.fiveAnswers[q.id] || '')}</textarea></div>`).join('');
-        document.querySelectorAll('.five-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        document.querySelectorAll('.five-input').forEach(el => {
+            el.addEventListener('input', () => syncCurrentProjectFromForms());
+        });
+        // 画布
         const canvasContainer = document.getElementById('canvasGrid');
         canvasContainer.innerHTML = config.canvasCells.map((cell, idx) => `<div class="canvas-cell"><div class="canvas-cell-title">${escapeHtml(cell.title)}</div><textarea rows="3" data-key="cell_${idx}" class="canvas-input" placeholder="${escapeHtml(cell.placeholder)}">${escapeHtml(currentProjectData.canvasAnswers[`cell_${idx}`] || '')}</textarea></div>`).join('');
-        document.querySelectorAll('.canvas-input').forEach(el => el.addEventListener('input', () => syncCurrentProjectFromForms()));
+        document.querySelectorAll('.canvas-input').forEach(el => {
+            el.addEventListener('input', () => syncCurrentProjectFromForms());
+        });
+        // 报告显示
         const reportDiv = document.getElementById('reportDisplay');
         if(currentProjectData.report) {
             if(typeof marked !== 'undefined') reportDiv.innerHTML = marked.parse(currentProjectData.report);
@@ -472,14 +543,18 @@
             const nextModule = moduleOrder[curIndex+1];
             switchTab(nextModule);
             showToast(`已保存，进入下一步：${nextModule}`);
-        } else { showToast("已保存"); }
+        } else {
+            showToast("已保存");
+        }
     }
 
     function createNewProject() {
         const newId = "proj_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+        const defaultInfo = {};
+        config.projectInfoFields.forEach(f => { defaultInfo[f.key] = f.default || ""; });
         const newProject = {
             id: newId,
-            projectInfo: { name: "新项目", industry: "", stage: "", goal: "" },
+            projectInfo: defaultInfo,
             selfCheckAnswers: {},
             timeline: { path: "", right: "", missed: "", now: "", future: "" },
             fiveAnswers: {},
@@ -531,7 +606,10 @@
                 if(!imported.id) imported.id = "import_" + Date.now();
                 if(!imported.createdAt) imported.createdAt = new Date().toISOString();
                 imported.updatedAt = new Date().toISOString();
-                if(!imported.projectInfo) imported.projectInfo = { name: "导入项目", industry: "", stage: "", goal: "" };
+                if(!imported.projectInfo) imported.projectInfo = {};
+                config.projectInfoFields.forEach(f => {
+                    if (imported.projectInfo[f.key] === undefined) imported.projectInfo[f.key] = f.default || "";
+                });
                 if(!imported.selfCheckAnswers) imported.selfCheckAnswers = {};
                 if(!imported.timeline) imported.timeline = { path: "", right: "", missed: "", now: "", future: "" };
                 if(!imported.fiveAnswers) imported.fiveAnswers = {};
@@ -578,27 +656,73 @@
         switchTab('selfcheck');
     };
 
+    // 后台管理：增加项目信息字段配置区域
     function renderAdminPanel() {
         const container = document.getElementById('adminPanel');
-        let html = `<div class="config-group"><h3>自检表问题配置</h3>`;
+        let html = `<div class="config-group"><h3>📋 项目基本信息字段配置（可增删改）</h3>`;
+        config.projectInfoFields.forEach((field, idx) => {
+            html += `<div class="config-field-item">
+                <div>字段标识: ${escapeHtml(field.key)}</div>
+                <div class="form-group"><label>标签</label><input type="text" id="admin_pif_label_${idx}" value="${escapeHtml(field.label)}"></div>
+                <div class="form-group"><label>类型</label><select id="admin_pif_type_${idx}">
+                    <option value="text" ${field.type==='text'?'selected':''}>单行文本</option>
+                    <option value="textarea" ${field.type==='textarea'?'selected':''}>多行文本</option>
+                    <option value="select" ${field.type==='select'?'selected':''}>下拉选项</option>
+                </select></div>
+                <div class="form-group"><label>占位符/选项(用逗号分隔)</label><input type="text" id="admin_pif_options_${idx}" value="${escapeHtml(field.options ? field.options.join(',') : '')}" placeholder="仅下拉类型有效"></div>
+                <button class="small remove-pif-btn" data-idx="${idx}" style="background:#c23d2b;">删除此字段</button>
+            </div>`;
+        });
+        html += `<button id="addPifBtn">+ 新增项目信息字段</button></div>`;
+
+        html += `<div class="config-group"><h3>📝 自检表问题配置</h3>`;
         config.selfCheck.forEach((q, i) => {
             html += `<div class="form-group"><label>问题${i+1}</label><input type="text" id="admin_sc_text_${i}" value="${escapeHtml(q.text)}"><input type="text" id="admin_sc_help_${i}" placeholder="帮助文本" value="${escapeHtml(q.help)}"></div>`;
         });
         html += `<button id="addScBtn">+ 新增自检问题</button></div>`;
-        html += `<div class="config-group"><h3>五问配置</h3>`;
+
+        html += `<div class="config-group"><h3>❓ 五问配置</h3>`;
         config.fiveQuestions.forEach((q, i) => {
             html += `<div class="form-group"><label>五问${i+1}</label><input type="text" id="admin_fq_text_${i}" value="${escapeHtml(q.text)}"><input type="text" id="admin_fq_placeholder_${i}" placeholder="placeholder" value="${escapeHtml(q.placeholder)}"></div>`;
         });
         html += `<button id="addFqBtn">+ 新增五问</button></div>`;
-        html += `<div class="config-group"><h3>画布配置</h3>`;
+
+        html += `<div class="config-group"><h3>🎨 画布配置</h3>`;
         config.canvasCells.forEach((cell, i) => {
             html += `<div class="form-group"><label>格子${i+1}</label><input type="text" id="admin_cell_title_${i}" value="${escapeHtml(cell.title)}"><input type="text" id="admin_cell_placeholder_${i}" placeholder="占位符" value="${escapeHtml(cell.placeholder)}"></div>`;
         });
         html += `<button id="addCellBtn">+ 新增画布格子</button></div>`;
-        html += `<div class="config-group"><h3>AI提示词</h3><textarea id="admin_system_prompt" rows="5">${escapeHtml(config.aiPrompt.system)}</textarea><textarea id="admin_user_template" rows="4">${escapeHtml(config.aiPrompt.userTemplate)}</textarea></div>`;
+
+        html += `<div class="config-group"><h3>🤖 AI提示词</h3><textarea id="admin_system_prompt" rows="5">${escapeHtml(config.aiPrompt.system)}</textarea><textarea id="admin_user_template" rows="4">${escapeHtml(config.aiPrompt.userTemplate)}</textarea></div>`;
         container.innerHTML = html;
+
+        // 保存配置按钮逻辑
         const saveBtn = document.getElementById('saveAdminConfig');
         if(saveBtn) saveBtn.onclick = () => {
+            // 收集项目信息字段
+            const newFields = [];
+            const pifCount = document.querySelectorAll('[id^="admin_pif_label_"]').length;
+            for(let i=0; i<pifCount; i++) {
+                const labelEl = document.getElementById(`admin_pif_label_${i}`);
+                if(!labelEl) continue;
+                const typeEl = document.getElementById(`admin_pif_type_${i}`);
+                const optionsEl = document.getElementById(`admin_pif_options_${i}`);
+                let options = null;
+                if (typeEl.value === 'select') {
+                    options = optionsEl.value.split(',').map(s => s.trim()).filter(s => s);
+                }
+                newFields.push({
+                    key: `field_${Date.now()}_${i}`,
+                    label: labelEl.value,
+                    type: typeEl.value,
+                    options: options,
+                    placeholder: "",
+                    default: ""
+                });
+            }
+            if(newFields.length) config.projectInfoFields = newFields;
+
+            // 自检表
             const newSc = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_sc_text_"]').length; i++) {
                 const textEl = document.getElementById(`admin_sc_text_${i}`);
@@ -606,6 +730,7 @@
                 newSc.push({ id: `sc${Date.now()}_${i}`, text: textEl.value, help: document.getElementById(`admin_sc_help_${i}`)?.value || "" });
             }
             if(newSc.length) config.selfCheck = newSc;
+            // 五问
             const newFq = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_fq_text_"]').length; i++) {
                 const textEl = document.getElementById(`admin_fq_text_${i}`);
@@ -613,6 +738,7 @@
                 newFq.push({ id: `fq${Date.now()}_${i}`, text: textEl.value, placeholder: document.getElementById(`admin_fq_placeholder_${i}`)?.value || "" });
             }
             if(newFq.length) config.fiveQuestions = newFq;
+            // 画布
             const newCells = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_cell_title_"]').length; i++) {
                 const titleEl = document.getElementById(`admin_cell_title_${i}`);
@@ -624,11 +750,27 @@
             config.aiPrompt.userTemplate = document.getElementById('admin_user_template').value;
             localStorage.setItem('brand_config', JSON.stringify(config));
             showToast("配置已保存，刷新表单生效");
+            // 迁移现有项目数据以适配新字段
+            allProjects.forEach(proj => migrateProjectInfo(proj));
+            persistProjects();
             if(currentProjectData) renderAllForms();
         };
-        document.getElementById('addScBtn')?.addEventListener('click', () => renderAdminPanel());
-        document.getElementById('addFqBtn')?.addEventListener('click', () => renderAdminPanel());
-        document.getElementById('addCellBtn')?.addEventListener('click', () => renderAdminPanel());
+
+        // 删除项目信息字段
+        document.querySelectorAll('.remove-pif-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.dataset.idx);
+                config.projectInfoFields.splice(idx, 1);
+                renderAdminPanel();
+            });
+        });
+        document.getElementById('addPifBtn')?.addEventListener('click', () => {
+            config.projectInfoFields.push({ key: "new_field", label: "新字段", type: "text", placeholder: "", default: "" });
+            renderAdminPanel();
+        });
+        document.getElementById('addScBtn')?.addEventListener('click', () => { config.selfCheck.push({ id: "sc"+Date.now(), text: "新问题", help: "" }); renderAdminPanel(); });
+        document.getElementById('addFqBtn')?.addEventListener('click', () => { config.fiveQuestions.push({ id: "fq"+Date.now(), text: "新问题", placeholder: "" }); renderAdminPanel(); });
+        document.getElementById('addCellBtn')?.addEventListener('click', () => { config.canvasCells.push({ title: "新格子", placeholder: "" }); renderAdminPanel(); });
     }
 
     async function generateReport() {
@@ -638,14 +780,17 @@
         if(!currentProjectData) return;
         syncCurrentProjectFromForms();
         const proj = currentProjectData;
+        // 组装项目信息文本
+        let projectInfoText = "";
+        config.projectInfoFields.forEach(field => {
+            const val = proj.projectInfo[field.key] || "";
+            projectInfoText += `${field.label}：${val}\n`;
+        });
         const selfText = config.selfCheck.map(q => `${q.text}：${proj.selfCheckAnswers[q.id] || "未填写"}`).join("\n");
         const fiveText = config.fiveQuestions.map(q => `${q.text}：${proj.fiveAnswers[q.id] || "未填写"}`).join("\n");
         const canvasText = config.canvasCells.map((cell, idx) => `${cell.title}：${proj.canvasAnswers[`cell_${idx}`] || "未填写"}`).join("\n");
         let userPrompt = config.aiPrompt.userTemplate
-            .replace('{{projectName}}', proj.projectInfo.name)
-            .replace('{{industry}}', proj.projectInfo.industry)
-            .replace('{{stage}}', proj.projectInfo.stage)
-            .replace('{{goal}}', proj.projectInfo.goal)
+            .replace('{{projectInfo}}', projectInfoText)
             .replace('{{selfCheck}}', selfText)
             .replace('{{five}}', fiveText)
             .replace('{{canvas}}', canvasText)
