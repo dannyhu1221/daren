@@ -121,13 +121,57 @@
             text-transform: uppercase;
         }
         .canvas-cell textarea { background: white; font-size: 0.85rem; min-height: 80px; }
+        
+        /* 报告区域样式修复 */
         .report-content {
             background: #fffaf3;
             padding: 20px;
             border-radius: 20px;
             line-height: 1.6;
-            white-space: pre-wrap;
+            white-space: normal;
+            word-wrap: break-word;
         }
+        .report-content p {
+            margin-bottom: 1em;
+        }
+        .report-content h1, .report-content h2, .report-content h3, .report-content h4 {
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+            color: #4e3b28;
+            font-weight: 600;
+        }
+        .report-content h1 { font-size: 1.5rem; }
+        .report-content h2 { font-size: 1.3rem; border-left: 3px solid #cb6e42; padding-left: 12px; }
+        .report-content h3 { font-size: 1.1rem; }
+        .report-content ul, .report-content ol {
+            padding-left: 1.8em;
+            margin-bottom: 1em;
+        }
+        .report-content li {
+            margin-bottom: 0.3em;
+        }
+        .report-content code {
+            background: #f0e3d6;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .report-content pre {
+            background: #f0e3d6;
+            padding: 12px;
+            border-radius: 16px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+        .report-content blockquote {
+            border-left: 4px solid #cb6e42;
+            padding-left: 16px;
+            margin: 1em 0;
+            color: #5e4b34;
+            font-style: italic;
+        }
+        
         .action-bar {
             display: flex;
             gap: 12px;
@@ -273,9 +317,8 @@
 <div id="toast" class="toast"></div>
 
 <script>
-    // ---------- 配置：包含动态项目信息字段定义 ----------
+    // ---------- 配置：项目信息字段、自检表、五问、画布、AI提示词 ----------
     let config = {
-        // 项目基本信息字段定义（支持增删改）
         projectInfoFields: [
             { key: "name", label: "项目名称 / 客户品牌", type: "text", placeholder: "例：湘西小馆", default: "" },
             { key: "industry", label: "所属行业", type: "select", options: ["餐饮","零售/电商","文创/设计","服务业","科技/互联网","其他"], default: "" },
@@ -324,7 +367,7 @@
             { title: "核心口号", placeholder: "一句能记住的话" }
         ],
         aiPrompt: {
-            system: "你是品牌策略顾问胡天任，拥有12年实战经验。请根据用户填写的【项目信息】、【品牌自检表】、【品牌年谱】、【五问洞察】、【定位画布】内容，生成一份专业的《品牌策略定位报告》。报告需包含以下结构：\n1. 项目概况（客户名称、行业、阶段、目标、背景）\n2. 品牌年谱提炼（成败关键节点）\n3. 核心痛点分析\n4. 差异化机会\n5. 客群与场景建议\n6. 品牌沟通调性\n7. 初期落地3件事\n\n语言风格：温暖、直击本质、避免空话。",
+            system: "你是品牌策略顾问胡天任，拥有12年实战经验。请根据用户填写的【项目信息】、【品牌自检表】、【品牌年谱】、【五问洞察】、【定位画布】内容，生成一份专业的《品牌策略定位报告》。报告需包含以下结构：\n1. 项目概况（客户名称、行业、阶段、目标、背景）\n2. 品牌年谱提炼（成败关键节点）\n3. 核心痛点分析\n4. 差异化机会\n5. 客群与场景建议\n6. 品牌沟通调性\n7. 初期落地3件事\n\n请使用标准 Markdown 格式输出，段落之间空一行，使用 ## 作为小标题，列表用 - 开头。语言风格：温暖、直击本质、避免空话。",
             userTemplate: "项目信息：\n{{projectInfo}}\n\n品牌自检表：\n{{selfCheck}}\n\n品牌年谱：\n发展路径：{{timelinePath}}\n做对了什么：{{timelineRight}}\n错过了什么：{{timelineMissed}}\n当下机遇与挑战：{{timelineNow}}\n未来思考：{{timelineFuture}}\n\n五问洞察：\n{{five}}\n\n定位画布：\n{{canvas}}"
         }
     };
@@ -371,7 +414,6 @@
         if(currentProjectId) loadCurrentProjectData();
     }
 
-    // 迁移旧项目数据结构（确保 projectInfo 包含所有定义字段）
     function migrateProjectInfo(proj) {
         if (!proj.projectInfo) proj.projectInfo = {};
         config.projectInfoFields.forEach(field => {
@@ -403,7 +445,6 @@
         else nameSpan.innerText = "无项目";
     }
 
-    // 从动态表单收集项目信息数据
     function collectProjectInfoFromForm() {
         const info = {};
         config.projectInfoFields.forEach(field => {
@@ -414,7 +455,6 @@
         return info;
     }
 
-    // 将项目信息数据填充到动态表单
     function populateProjectInfoForm(info) {
         config.projectInfoFields.forEach(field => {
             const el = document.getElementById(`project_field_${field.key}`);
@@ -424,14 +464,11 @@
 
     function syncCurrentProjectFromForms() {
         if(!currentProjectData) return;
-        // 项目信息（动态）
         currentProjectData.projectInfo = collectProjectInfoFromForm();
-        // 自检表
         config.selfCheck.forEach(q => {
             const el = document.querySelector(`.selfcheck-input[data-id="${q.id}"]`);
             if(el) currentProjectData.selfCheckAnswers[q.id] = el.value;
         });
-        // 年谱
         currentProjectData.timeline = {
             path: document.getElementById('timelinePath').value,
             right: document.getElementById('timelineRight').value,
@@ -439,12 +476,10 @@
             now: document.getElementById('timelineNow').value,
             future: document.getElementById('timelineFuture').value
         };
-        // 五问
         config.fiveQuestions.forEach(q => {
             const el = document.querySelector(`.five-input[data-id="${q.id}"]`);
             if(el) currentProjectData.fiveAnswers[q.id] = el.value;
         });
-        // 画布
         config.canvasCells.forEach((_, idx) => {
             const el = document.querySelector(`.canvas-input[data-key="cell_${idx}"]`);
             if(el) currentProjectData.canvasAnswers[`cell_${idx}`] = el.value;
@@ -457,7 +492,6 @@
         updateCurrentProjectNameDisplay();
     }
 
-    // 渲染项目信息模块（动态）
     function renderProjectInfoForm() {
         const container = document.getElementById('projectInfoForm');
         let html = '';
@@ -476,7 +510,6 @@
             }
         });
         container.innerHTML = html;
-        // 绑定输入事件实时保存
         config.projectInfoFields.forEach(field => {
             const el = document.getElementById(`project_field_${field.key}`);
             if (el) el.addEventListener('input', () => syncCurrentProjectFromForms());
@@ -486,13 +519,11 @@
     function renderAllForms() {
         if(!currentProjectData) return;
         renderProjectInfoForm();
-        // 自检表
         const scContainer = document.getElementById('selfcheckForm');
         scContainer.innerHTML = config.selfCheck.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="selfcheck-input">${escapeHtml(currentProjectData.selfCheckAnswers[q.id] || '')}</textarea><div class="helper" style="font-size:0.7rem; color:#9b8872;">${escapeHtml(q.help)}</div></div>`).join('');
         document.querySelectorAll('.selfcheck-input').forEach(el => {
             el.addEventListener('input', () => syncCurrentProjectFromForms());
         });
-        // 年谱
         document.getElementById('timelinePath').value = currentProjectData.timeline.path || "";
         document.getElementById('timelineRight').value = currentProjectData.timeline.right || "";
         document.getElementById('timelineMissed').value = currentProjectData.timeline.missed || "";
@@ -501,24 +532,28 @@
         ['timelinePath','timelineRight','timelineMissed','timelineNow','timelineFuture'].forEach(id => {
             document.getElementById(id).addEventListener('input', () => syncCurrentProjectFromForms());
         });
-        // 五问
         const fiveContainer = document.getElementById('fiveQuestionsForm');
         fiveContainer.innerHTML = config.fiveQuestions.map(q => `<div class="form-group"><label>${escapeHtml(q.text)}</label><textarea rows="2" data-id="${q.id}" class="five-input" placeholder="${escapeHtml(q.placeholder)}">${escapeHtml(currentProjectData.fiveAnswers[q.id] || '')}</textarea></div>`).join('');
         document.querySelectorAll('.five-input').forEach(el => {
             el.addEventListener('input', () => syncCurrentProjectFromForms());
         });
-        // 画布
         const canvasContainer = document.getElementById('canvasGrid');
         canvasContainer.innerHTML = config.canvasCells.map((cell, idx) => `<div class="canvas-cell"><div class="canvas-cell-title">${escapeHtml(cell.title)}</div><textarea rows="3" data-key="cell_${idx}" class="canvas-input" placeholder="${escapeHtml(cell.placeholder)}">${escapeHtml(currentProjectData.canvasAnswers[`cell_${idx}`] || '')}</textarea></div>`).join('');
         document.querySelectorAll('.canvas-input').forEach(el => {
             el.addEventListener('input', () => syncCurrentProjectFromForms());
         });
-        // 报告显示
         const reportDiv = document.getElementById('reportDisplay');
         if(currentProjectData.report) {
-            if(typeof marked !== 'undefined') reportDiv.innerHTML = marked.parse(currentProjectData.report);
-            else reportDiv.innerHTML = `<pre>${escapeHtml(currentProjectData.report)}</pre>`;
+            renderMarkdown(reportDiv, currentProjectData.report);
         } else { reportDiv.innerHTML = "尚未生成报告，点击上方按钮生成。"; }
+    }
+
+    function renderMarkdown(container, markdownText) {
+        if (typeof marked !== 'undefined') {
+            container.innerHTML = marked.parse(markdownText);
+        } else {
+            container.innerHTML = `<pre style="white-space: pre-wrap;">${escapeHtml(markdownText)}</pre>`;
+        }
     }
 
     function switchTab(tabId) {
@@ -656,7 +691,6 @@
         switchTab('selfcheck');
     };
 
-    // 后台管理：增加项目信息字段配置区域
     function renderAdminPanel() {
         const container = document.getElementById('adminPanel');
         let html = `<div class="config-group"><h3>📋 项目基本信息字段配置（可增删改）</h3>`;
@@ -696,10 +730,8 @@
         html += `<div class="config-group"><h3>🤖 AI提示词</h3><textarea id="admin_system_prompt" rows="5">${escapeHtml(config.aiPrompt.system)}</textarea><textarea id="admin_user_template" rows="4">${escapeHtml(config.aiPrompt.userTemplate)}</textarea></div>`;
         container.innerHTML = html;
 
-        // 保存配置按钮逻辑
         const saveBtn = document.getElementById('saveAdminConfig');
         if(saveBtn) saveBtn.onclick = () => {
-            // 收集项目信息字段
             const newFields = [];
             const pifCount = document.querySelectorAll('[id^="admin_pif_label_"]').length;
             for(let i=0; i<pifCount; i++) {
@@ -722,7 +754,6 @@
             }
             if(newFields.length) config.projectInfoFields = newFields;
 
-            // 自检表
             const newSc = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_sc_text_"]').length; i++) {
                 const textEl = document.getElementById(`admin_sc_text_${i}`);
@@ -730,7 +761,6 @@
                 newSc.push({ id: `sc${Date.now()}_${i}`, text: textEl.value, help: document.getElementById(`admin_sc_help_${i}`)?.value || "" });
             }
             if(newSc.length) config.selfCheck = newSc;
-            // 五问
             const newFq = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_fq_text_"]').length; i++) {
                 const textEl = document.getElementById(`admin_fq_text_${i}`);
@@ -738,7 +768,6 @@
                 newFq.push({ id: `fq${Date.now()}_${i}`, text: textEl.value, placeholder: document.getElementById(`admin_fq_placeholder_${i}`)?.value || "" });
             }
             if(newFq.length) config.fiveQuestions = newFq;
-            // 画布
             const newCells = [];
             for(let i=0; i<document.querySelectorAll('[id^="admin_cell_title_"]').length; i++) {
                 const titleEl = document.getElementById(`admin_cell_title_${i}`);
@@ -750,13 +779,11 @@
             config.aiPrompt.userTemplate = document.getElementById('admin_user_template').value;
             localStorage.setItem('brand_config', JSON.stringify(config));
             showToast("配置已保存，刷新表单生效");
-            // 迁移现有项目数据以适配新字段
             allProjects.forEach(proj => migrateProjectInfo(proj));
             persistProjects();
             if(currentProjectData) renderAllForms();
         };
 
-        // 删除项目信息字段
         document.querySelectorAll('.remove-pif-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(btn.dataset.idx);
@@ -780,7 +807,6 @@
         if(!currentProjectData) return;
         syncCurrentProjectFromForms();
         const proj = currentProjectData;
-        // 组装项目信息文本
         let projectInfoText = "";
         config.projectInfoFields.forEach(field => {
             const val = proj.projectInfo[field.key] || "";
@@ -818,11 +844,12 @@
             });
             if(!resp.ok) throw new Error(`API错误 ${resp.status}`);
             const data = await resp.json();
-            const content = data.choices[0].message.content;
-            if(typeof marked !== 'undefined') reportDiv.innerHTML = marked.parse(content);
-            else reportDiv.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
+            let content = data.choices[0].message.content;
+            // 预处理：将单个换行（非连续两个）转换为 <br>，增强可读性（但Markdown解析器一般会处理）
+            // 这里不做过度处理，因为 marked 会处理标准 Markdown。
             currentProjectData.report = content;
             syncCurrentProjectFromForms();
+            renderMarkdown(reportDiv, content);
             showToast("报告生成完成 (DeepSeek-V4-Pro)");
         } catch(e) {
             reportDiv.innerHTML = `<div style="color:#c23d2b;">生成失败：${e.message}</div>`;
@@ -865,7 +892,10 @@
         if(typeof marked === 'undefined') {
             const script = document.createElement('script');
             script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+            script.onload = () => { if(currentProjectData && currentProjectData.report) renderMarkdown(document.getElementById('reportDisplay'), currentProjectData.report); };
             document.head.appendChild(script);
+        } else {
+            if(currentProjectData && currentProjectData.report) renderMarkdown(document.getElementById('reportDisplay'), currentProjectData.report);
         }
     }
     init();
